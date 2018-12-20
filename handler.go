@@ -7,7 +7,7 @@ import (
 
 func (a *App) initHandler() {
 	a.registerRouter("/user/create", a.createUserHandler)
-	a.registerRouter("user/update", a.updataUserHandler)
+	a.registerRouter("/user/update", a.updataUserHandler)
 }
 
 func (a *App) registerRouter(pattern string, handler func(http.ResponseWriter, *http.Request)) {

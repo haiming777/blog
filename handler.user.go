@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -66,7 +67,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -4,
-			ErrMessage: "db query error",
+			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
 		})
 		return
 	}
@@ -91,7 +92,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -5,
-			ErrMessage: "create user error",
+			ErrMessage: fmt.Sprintf("create user error:%s", err.Error()),
 		})
 		return
 	}
@@ -144,7 +145,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
-			ErrMessage: "db query error",
+			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
 		})
 		return
 	}
@@ -168,7 +169,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -3,
-			ErrMessage: "update user info error",
+			ErrMessage: fmt.Sprintf("update user info error:%s", err.Error()),
 		})
 		return
 	}

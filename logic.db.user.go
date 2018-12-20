@@ -24,12 +24,11 @@ func (a *App) createUser(u *User) (err error) {
 		return nil
 	}
 	u.ID = uint(id)
-
 	return
 }
 
 func (a *App) queryUser(u User) (result bool, err error) {
-	result = true
+	result = false
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -37,12 +36,13 @@ func (a *App) queryUser(u User) (result bool, err error) {
 
 	var rows *sql.Rows
 	if u.ID != 0 {
-		rows, err = db.Query(fmt.Sprintf("SELECT id users WHERE id=%d", u.ID))
+		rows, err = db.Query(fmt.Sprintf("SELECT id FROM users WHERE id=%d", u.ID))
 	} else if u.Name != "" {
-		rows, err = db.Query(fmt.Sprintf("SELECT id users WHERE name=%s", u.Name))
+		rows, err = db.Query(fmt.Sprintf("SELECT id FROM users WHERE name='%s'", u.Name))
 	}
 
 	if err != nil {
+		fmt.Println(err.Error())
 		return result, err
 	}
 
@@ -50,15 +50,18 @@ func (a *App) queryUser(u User) (result bool, err error) {
 		var id int
 		err = rows.Scan(&id)
 		if err != nil {
-			result = false
+			rows.Close()
 			return result, err
 		}
 
-		if id == 0 {
-			result = false
+		if id != 0 {
+			rows.Close()
+			result = true
 			return result, err
 		}
 	}
+
+	rows.Close()
 
 	return result, err
 }
@@ -75,27 +78,26 @@ func (a *App) updateUser(u User) error {
 	if u.ID != 0 {
 		conditionStr = fmt.Sprintf("%sid=%d", conditionStr, u.ID)
 		if u.Name != "" {
-			updateStr = fmt.Sprintf("%sname=%s", updateStr, u.Name)
+			updateStr = fmt.Sprintf("%sname='%s'", updateStr, u.Name)
 		}
-
-		if u.EncryptedPassword != "" {
-			updateStr = fmt.Sprintf("%s,encrypted_password=%s", updateStr, u.EncryptedPassword)
-		}
-
-		// if u.Status != 0 {
-		// 	updateStr = fmt.Sprintf("%s,status=%d", updateStr, u.Status)
-		// }
 	} else if u.Name != "" {
-		conditionStr = fmt.Sprintf("%sname=%s", conditionStr, u.Name)
-		if u.EncryptedPassword != "" {
-			updateStr = fmt.Sprintf("%sname=%s", updateStr, u.Name)
+		conditionStr = fmt.Sprintf("%sname='%s'", conditionStr, u.Name)
 
-		}
-
-		// if u.Status != 0 {
-		// 	updateStr = fmt.Sprintf("%s,status=%d", updateStr, u.Status)
-		// }
 	}
+
+	if u.EncryptedPassword != "" {
+		if updateStr != " SET " {
+			updateStr += ","
+		}
+		updateStr = fmt.Sprintf("%sencrypted_password='%s'", updateStr, u.EncryptedPassword)
+	}
+
+	// if u.Status != 0 {
+	// 	if updateStr != " SET " {
+	// 		updateStr += ","
+	// 	}
+	// 	updateStr = fmt.Sprintf("%sstatus=%d", updateStr, u.Status)
+	// }
 
 	if updateStr == " SET " || conditionStr == " WHERE " {
 		return fmt.Errorf("update info error or update condition info error")
