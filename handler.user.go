@@ -1,12 +1,12 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"golang.org/x/crypto/bcrypt"
+	"strings"
 )
 
 // createUserHandler 创建用户
@@ -81,10 +81,11 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//创建user
-	encryptedBytes, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	encryptedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+
 	user := &User{
 		Name:              req.Name,
-		EncryptedPassword: string(encryptedBytes),
+		EncryptedPassword: encryptedPassword,
 		Status:            1,
 	}
 
@@ -166,11 +167,17 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	encryptedBytes, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	//修改密码没有有效字符，则不做修改
+	targetStr := strings.Replace(req.Password, " ", "", -1)
+	encryptedPassword := targetStr
+	if targetStr != "" {
+		encryptedPassword = fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+	}
+
 	user := &User{
 		ID:                req.ID,
 		Name:              req.Name,
-		EncryptedPassword: string(encryptedBytes),
+		EncryptedPassword: encryptedPassword,
 		Status:            req.State,
 	}
 

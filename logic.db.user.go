@@ -67,6 +67,12 @@ func (a *App) updateUser(u *User) error {
 		return err
 	}
 	if u.ID != 0 && u.Name != "" {
+		qu := User{Name: u.Name}
+		result, _ := a.queryUser(qu)
+		if result {
+			err = fmt.Errorf("Name already exist")
+			return err
+		}
 		err = a.updateUserName(u)
 	}
 
@@ -122,7 +128,7 @@ func (a *App) updateUserPasswordWithID(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET password=? WHERE id=?")
+	stmt, err := db.Prepare("UPDATE users SET encrypted_password=? WHERE id=?")
 
 	if err != nil {
 		return err
@@ -145,7 +151,7 @@ func (a *App) updatePasswordWithName(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET password=? WHERE name=?")
+	stmt, err := db.Prepare("UPDATE users SET encrypted_password=? WHERE name=?")
 
 	if err != nil {
 		return err
