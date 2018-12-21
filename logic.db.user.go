@@ -13,7 +13,12 @@ func (a *App) createUser(u *User) (err error) {
 	db := a.getDB()
 
 	var r sql.Result
-	r, err = db.Exec("INSERT INTO users(name, encrypted_password, status) values(?,?,?)", u.Name, u.EncryptedPassword, u.Status)
+	smt, err := db.Prepare("INSERT INTO users(name, encrypted_password, status) values(?,?,?)")
+	if err != nil {
+		return
+	}
+
+	r, err = smt.Exec(u.Name, u.EncryptedPassword, u.Status)
 	if err != nil {
 		return
 	}
@@ -29,86 +34,178 @@ func (a *App) createUser(u *User) (err error) {
 
 func (a *App) queryUser(u User) (result bool, err error) {
 	result = false
+	if u.ID == 0 && u.Name == "" {
+		return result, fmt.Errorf("query condition error")
+	}
 
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
 	db := a.getDB()
+	var uid uint
 
-	var rows *sql.Rows
-	if u.ID != 0 {
-		rows, err = db.Query(fmt.Sprintf("SELECT id FROM users WHERE id=%d", u.ID))
-	} else if u.Name != "" {
-		rows, err = db.Query(fmt.Sprintf("SELECT id FROM users WHERE name='%s'", u.Name))
+	if u.ID == 0 {
+		err = db.QueryRow(fmt.Sprintf("SELECT id FROM users WHERE name='%s'", u.Name)).Scan(&uid)
+
+	} else {
+		err = db.QueryRow(fmt.Sprintf("SELECT id FROM users WHERE id=%d", u.ID)).Scan(&uid)
 	}
 
-	if err != nil {
-		fmt.Println(err.Error())
+	switch {
+	case err == sql.ErrNoRows:
+		return result, nil
+	case err != nil:
 		return result, err
+	default:
+		result = true
 	}
-
-	for rows.Next() {
-		var id int
-		err = rows.Scan(&id)
-		if err != nil {
-			rows.Close()
-			return result, err
-		}
-
-		if id != 0 {
-			rows.Close()
-			result = true
-			return result, err
-		}
-	}
-
-	rows.Close()
 
 	return result, err
 }
 
-func (a *App) updateUser(u User) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	db := a.getDB()
-
-	sqlStr := "UPDATE users"
-	updateStr := " SET "
-	conditionStr := " WHERE "
-
-	if u.ID != 0 {
-		conditionStr = fmt.Sprintf("%sid=%d", conditionStr, u.ID)
-		if u.Name != "" {
-			updateStr = fmt.Sprintf("%sname='%s'", updateStr, u.Name)
-		}
-	} else if u.Name != "" {
-		conditionStr = fmt.Sprintf("%sname='%s'", conditionStr, u.Name)
-
+func (a *App) updateUser(u *User) error {
+	var err error
+	if u.ID == 0 && u.Name == "" {
+		err = fmt.Errorf("update user condition error")
+		return err
+	}
+	if u.ID != 0 && u.Name != "" {
+		err = a.updateUserName(u)
 	}
 
 	if u.EncryptedPassword != "" {
-		if updateStr != " SET " {
-			updateStr += ","
+
+		if u.ID != 0 {
+			err = a.updateUserPasswordWithID(u)
+		} else {
+			if u.Name != "" {
+				err = a.updatePasswordWithName(u)
+			}
 		}
-		updateStr = fmt.Sprintf("%sencrypted_password='%s'", updateStr, u.EncryptedPassword)
 	}
 
-	// if u.Status != 0 {
-	// 	if updateStr != " SET " {
-	// 		updateStr += ","
-	// 	}
-	// 	updateStr = fmt.Sprintf("%sstatus=%d", updateStr, u.Status)
-	// }
-
-	if updateStr == " SET " || conditionStr == " WHERE " {
-		return fmt.Errorf("update info error or update condition info error")
+	if u.Status != 0 {
+		if u.ID != 0 {
+			err = a.updateStatusWithID(u)
+		} else {
+			if u.Name != "" {
+				err = a.updateStatusWithName(u)
+			}
+		}
 	}
 
-	sqlStr = fmt.Sprintf("%s%s%s", sqlStr, updateStr, conditionStr)
+	return nil
+}
 
-	_, err := db.Exec(sqlStr)
+func (a *App) updateUserName(u *User) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	db := a.getDB()
+	stmt, err := db.Prepare("UPDATE users SET name=? WHERE id=?")
+
 	if err != nil {
 		return err
 	}
 
+	r, err := stmt.Exec(u.Name, u.ID)
+	if err != nil {
+		return err
+	}
+	_, err = r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) updateUserPasswordWithID(u *User) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	db := a.getDB()
+	stmt, err := db.Prepare("UPDATE users SET password=? WHERE id=?")
+
+	if err != nil {
+		return err
+	}
+
+	r, err := stmt.Exec(u.EncryptedPassword, u.ID)
+	if err != nil {
+		return err
+	}
+	_, err = r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) updatePasswordWithName(u *User) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	db := a.getDB()
+	stmt, err := db.Prepare("UPDATE users SET password=? WHERE name=?")
+
+	if err != nil {
+		return err
+	}
+
+	r, err := stmt.Exec(u.EncryptedPassword, u.Name)
+	if err != nil {
+		return err
+	}
+	uid, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+	u.ID = uint(uid)
+
+	return nil
+}
+
+func (a *App) updateStatusWithID(u *User) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	db := a.getDB()
+	stmt, err := db.Prepare("UPDATE users SET status=? WHERE id=?")
+
+	if err != nil {
+		return err
+	}
+
+	r, err := stmt.Exec(u.Status, u.ID)
+	if err != nil {
+		return err
+	}
+	_, err = r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) updateStatusWithName(u *User) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	db := a.getDB()
+	stmt, err := db.Prepare("UPDATE users SET status=? WHERE name=?")
+
+	if err != nil {
+		return err
+	}
+
+	r, err := stmt.Exec(u.Status, u.Name)
+	if err != nil {
+		return err
+	}
+	uid, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+	u.ID = uint(uid)
 	return nil
 }

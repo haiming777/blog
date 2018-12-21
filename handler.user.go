@@ -141,6 +141,15 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.ID == 0 && req.Name == "" {
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: "param is error",
+		})
+
+		return
+	}
+
 	exist, err := a.queryUser(User{ID: req.ID, Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
@@ -158,7 +167,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encryptedBytes, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
-	user := User{
+	user := &User{
 		ID:                req.ID,
 		Name:              req.Name,
 		EncryptedPassword: string(encryptedBytes),
