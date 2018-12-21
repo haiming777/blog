@@ -8,6 +8,8 @@ import (
 func (a *App) initHandler() {
 	a.registerRouter("/user/create", a.createUserHandler)
 	a.registerRouter("/user/update", a.updataUserHandler)
+	a.registerRouter("/signin", a.signin)
+
 }
 
 func (a *App) registerRouter(pattern string, handler func(http.ResponseWriter, *http.Request)) {

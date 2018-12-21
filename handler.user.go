@@ -63,7 +63,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	//查询user name 是否已存在
 
-	exist, err := a.queryUser(User{Name: req.Name})
+	exist, _, err := a.queryUser(User{Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -4,
@@ -104,6 +104,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//updataUserHandler 更新用户信息操作
 func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "PUT" {
 		outputJSON(w, APIStatus{
@@ -151,7 +152,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exist, err := a.queryUser(User{ID: req.ID, Name: req.Name})
+	exist, _, err := a.queryUser(User{ID: req.ID, Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
@@ -165,6 +166,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 			ErrCode:    -2,
 			ErrMessage: "user name is not exist",
 		})
+		return
 	}
 
 	//修改密码没有有效字符，则不做修改
@@ -189,6 +191,97 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	outputJSON(w, APIStatus{
+		ErrCode: 0,
+	})
+}
+
+//signin 登录操作
+func (a *App) signin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: "request method error",
+		})
+
+		return
+	}
+
+	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
+	if err != nil {
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: "read request body error",
+		})
+		return
+	}
+	defer r.Body.Close()
+
+	req := struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+	}{}
+
+	err = json.Unmarshal(data, &req)
+	if err != nil {
+
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: "json format struct error",
+		})
+		return
+	}
+
+	if req.Name == "" {
+		outputJSON(w, APIStatus{
+			ErrCode:    -2,
+			ErrMessage: "account is empty",
+		})
+		return
+	}
+
+	if req.Password == "" {
+		outputJSON(w, APIStatus{
+			ErrCode:    -3,
+			ErrMessage: "password is empty",
+		})
+		return
+	}
+
+	exist, user, err := a.queryUser(User{Name: req.Name})
+	if err != nil {
+		outputJSON(w, APIStatus{
+			ErrCode:    -2,
+			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
+		})
+		return
+	}
+
+	if !exist {
+		outputJSON(w, APIStatus{
+			ErrCode:    -2,
+			ErrMessage: "user name is not exist",
+		})
+		return
+	}
+
+	encryptedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+	if encryptedPassword != user.EncryptedPassword {
+		outputJSON(w, APIStatus{
+			ErrCode:    -3,
+			ErrMessage: "name/password is error",
+		})
+		return
+	}
+
+	// if user.Status != 1 {
+	// 	outputJSON(w, APIStatus{
+	// 		ErrCode:    -4,
+	// 		ErrMessage: "account is locked",
+	// 	})
+	// 	return
+	// }
 
 	outputJSON(w, APIStatus{
 		ErrCode: 0,
