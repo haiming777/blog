@@ -6,9 +6,13 @@ import (
 )
 
 func (a *App) initHandler() {
+	//user
 	a.registerRouter("/user/create", a.createUserHandler)
 	a.registerRouter("/user/update", a.updataUserHandler)
 	a.registerRouter("/signin", a.signin)
+
+	//category
+	a.registerRouter("/category/create", a.createCategoryHandler)
 
 }
 

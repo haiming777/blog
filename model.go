@@ -6,8 +6,9 @@ import (
 
 //APIStatus - general api result
 type APIStatus struct {
-	ErrCode    int    `json:"code"`
-	ErrMessage string `json:"msg,omitempty"`
+	ErrCode    int         `json:"code"`
+	ErrMessage string      `json:"msg,omitempty"`
+	Data       interface{} `json:"response,omitempty"`
 }
 
 // Post 文章
