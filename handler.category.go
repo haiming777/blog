@@ -67,5 +67,30 @@ func (a *App) createCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outputJSON(w, APIStatus{ErrCode: 0, Data: cate})
+}
 
+func (a *App) categoryListHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: "request method is error",
+		})
+		return
+	}
+
+	//查询所有category数据并返回
+	categories, err := a.queryCategories()
+	if err != nil {
+		outputJSON(w, APIStatus{
+			ErrCode:    -1,
+			ErrMessage: fmt.Sprintf("query category error:%s", err.Error()),
+		})
+
+		return
+	}
+
+	outputJSON(w, APIStatus{
+		ErrCode: 0,
+		Data:    categories,
+	})
 }
