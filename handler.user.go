@@ -63,7 +63,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	//查询user name 是否已存在
 
-	exist, _, err := a.queryUser(User{Name: req.Name})
+	um, err := a.queryUser(User{Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -4,
@@ -72,7 +72,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if exist {
+	if um.ID != 0 {
 		outputJSON(w, APIStatus{
 			ErrCode:    -4,
 			ErrMessage: "name is already signup",
@@ -152,7 +152,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exist, _, err := a.queryUser(User{ID: req.ID, Name: req.Name})
+	um, err := a.queryUser(User{ID: req.ID, Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
@@ -161,7 +161,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !exist {
+	if um.ID == 0 {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
 			ErrMessage: "user name is not exist",
@@ -249,7 +249,7 @@ func (a *App) signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exist, user, err := a.queryUser(User{Name: req.Name})
+	user, err := a.queryUser(User{Name: req.Name})
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
@@ -258,7 +258,7 @@ func (a *App) signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !exist {
+	if user.ID == 0 {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
 			ErrMessage: "user name is not exist",

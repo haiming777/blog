@@ -29,40 +29,68 @@ func (a *App) createUser(u *User) (err error) {
 }
 
 //queryUser 查询用户，返回结果：bool操作用户信息判断；err错误信息反馈；user返回对外用户信息
-func (a *App) queryUser(u User) (result bool, user *User, err error) {
-	result = false
+func (a *App) queryUser(u User) (user *User, err error) {
 	if u.ID == 0 && u.Name == "" {
 		err = fmt.Errorf("query condition error")
-		return result, nil, err
+		return
 	}
 
-	db := a.getDB()
-	var name string
-	var encryptedPassword string
-	var status uint
-
-	if u.ID == 0 {
-		err = db.QueryRow(fmt.Sprintf("SELECT name,encrypted_password,status FROM users WHERE name='%s'", u.Name)).Scan(&name, &encryptedPassword, &status)
-
+	if u.ID != 0 {
+		user, err = a.queryUserWithID(u)
 	} else {
-		err = db.QueryRow(fmt.Sprintf("SELECT name,encrypted_password,status FROM users WHERE id=%d", u.ID)).Scan(&name, &encryptedPassword, &status)
+		user, err = a.queryUserWithName(u)
 	}
 
-	switch {
-	case err == sql.ErrNoRows:
-		return result, nil, nil
-	case err != nil:
-		return result, nil, err
-	default:
-		result = true
-		user = &User{
-			Name:              name,
-			EncryptedPassword: encryptedPassword,
-			Status:            status,
-		}
+	if err != nil && err == sql.ErrNoRows {
+		err = nil
+		return
 	}
 
-	return result, user, err
+	return
+}
+
+func (a *App) queryUserWithID(u User) (user *User, err error) {
+	if u.ID == 0 && u.Name == "" {
+		err = fmt.Errorf("query condition error")
+		return
+	}
+
+	user = &User{}
+	db := a.getDB()
+
+	var uid, status uint
+	var name string
+
+	err = db.QueryRow("SELECT id,name,status FROM users WHERE id=? ", u.ID).Scan(&uid, &name, &status)
+	if err == nil {
+		user.ID = uid
+		user.Name = name
+		user.Status = status
+	}
+
+	return
+}
+
+func (a *App) queryUserWithName(u User) (user *User, err error) {
+	if u.ID == 0 && u.Name == "" {
+		err = fmt.Errorf("query condition error")
+		return
+	}
+
+	user = &User{}
+	db := a.getDB()
+
+	var uid, status uint
+	var name string
+	err = db.QueryRow("SELECT id,name,status FROM users WHERE name=? ", u.Name).Scan(&uid, &name, &status)
+
+	if err == nil {
+		user.ID = uid
+		user.Name = name
+		user.Status = status
+	}
+
+	return
 }
 
 func (a *App) updateUser(u *User) error {
@@ -73,8 +101,8 @@ func (a *App) updateUser(u *User) error {
 	}
 	if u.ID != 0 && u.Name != "" {
 		qu := User{Name: u.Name}
-		result, _, _ := a.queryUser(qu)
-		if result {
+		user, _ := a.queryUser(qu)
+		if user.ID != 0 {
 			err = fmt.Errorf("Name already exist")
 			return err
 		}
@@ -111,12 +139,7 @@ func (a *App) updateUserName(u *User) error {
 
 	db := a.getDB()
 
-	r, err := db.Exec("UPDATE users SET name=? WHERE id=?", u.Name, u.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.RowsAffected()
+	_, err := db.Exec("UPDATE users SET name=? WHERE id=?", u.Name, u.ID)
 	if err != nil {
 		return err
 	}
@@ -130,12 +153,7 @@ func (a *App) updateUserPasswordWithID(u *User) error {
 
 	db := a.getDB()
 
-	r, err := db.Exec("UPDATE users SET encrypted_password=? WHERE id=?", u.EncryptedPassword, u.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.RowsAffected()
+	_, err := db.Exec("UPDATE users SET encrypted_password=? WHERE id=?", u.EncryptedPassword, u.ID)
 	if err != nil {
 		return err
 	}
@@ -169,12 +187,7 @@ func (a *App) updateStatusWithID(u *User) error {
 
 	db := a.getDB()
 
-	r, err := db.Exec("UPDATE users SET status=? WHERE id=?", u.Status, u.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.RowsAffected()
+	_, err := db.Exec("UPDATE users SET status=? WHERE id=?", u.Status, u.ID)
 	if err != nil {
 		return err
 	}
