@@ -28,7 +28,7 @@ func (a *App) createUser(u *User) (err error) {
 	return
 }
 
-//queryUser 查询用户，返回结果：bool操作用户信息判断；err错误信息反馈；user返回对外用户信息
+//queryUser 查询用户，返回结果：user返回对外用户信息;err错误信息反馈；
 func (a *App) queryUser(u User) (user *User, err error) {
 	if u.ID == 0 && u.Name == "" {
 		err = fmt.Errorf("query condition error")
