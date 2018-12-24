@@ -13,6 +13,7 @@ func (a *App) initHandler() {
 
 	//category
 	a.registerRouter("/category/create", a.createCategoryHandler)
+	a.registerRouter("/categories", a.categoryListHandler)
 
 }
 
