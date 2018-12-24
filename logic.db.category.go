@@ -18,3 +18,36 @@ func (a *App) createCategory(c *Category) error {
 	c.ID = uint(cid)
 	return nil
 }
+
+//queryCategories 查询所有分类
+func (a *App) queryCategories() ([]Category, error) {
+	db := a.getDB()
+
+	rows, err := db.Query("SELECT * FROM categories")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		cid      uint
+		name     string
+		parentID uint
+	)
+
+	categories := make([]Category, 0)
+	for rows.Next() {
+		err = rows.Scan(&cid, &name, &parentID)
+		if err != nil {
+			return nil, err
+		}
+		category := Category{
+			ID:       cid,
+			Name:     name,
+			ParentID: parentID,
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
+}
