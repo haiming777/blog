@@ -13,16 +13,11 @@ func (a *App) createUser(u *User) (err error) {
 	db := a.getDB()
 
 	var r sql.Result
-	stmt, err := db.Prepare("INSERT INTO users(name, encrypted_password, status) values(?,?,?)")
-	if err != nil {
-		return
-	}
 
-	r, err = stmt.Exec(u.Name, u.EncryptedPassword, u.Status)
+	r, err = db.Exec("INSERT INTO users(name, encrypted_password, status) values(?,?,?)", u.Name, u.EncryptedPassword, u.Status)
 	if err != nil {
 		return
 	}
-	defer stmt.Close()
 
 	var id int64
 	id, err = r.LastInsertId()
@@ -115,17 +110,11 @@ func (a *App) updateUserName(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET name=? WHERE id=?")
 
+	r, err := db.Exec("UPDATE users SET name=? WHERE id=?", u.Name, u.ID)
 	if err != nil {
 		return err
 	}
-
-	r, err := stmt.Exec(u.Name, u.ID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	_, err = r.RowsAffected()
 	if err != nil {
@@ -140,17 +129,11 @@ func (a *App) updateUserPasswordWithID(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET encrypted_password=? WHERE id=?")
 
+	r, err := db.Exec("UPDATE users SET encrypted_password=? WHERE id=?", u.EncryptedPassword, u.ID)
 	if err != nil {
 		return err
 	}
-
-	r, err := stmt.Exec(u.EncryptedPassword, u.ID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	_, err = r.RowsAffected()
 	if err != nil {
@@ -165,17 +148,11 @@ func (a *App) updatePasswordWithName(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET encrypted_password=? WHERE name=?")
 
+	r, err := db.Exec("UPDATE users SET encrypted_password=? WHERE name=?", u.EncryptedPassword, u.Name)
 	if err != nil {
 		return err
 	}
-
-	r, err := stmt.Exec(u.EncryptedPassword, u.Name)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	uid, err := r.RowsAffected()
 	if err != nil {
@@ -191,17 +168,11 @@ func (a *App) updateStatusWithID(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET status=? WHERE id=?")
 
+	r, err := db.Exec("UPDATE users SET status=? WHERE id=?", u.Status, u.ID)
 	if err != nil {
 		return err
 	}
-
-	r, err := stmt.Exec(u.Status, u.ID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	_, err = r.RowsAffected()
 	if err != nil {
@@ -216,17 +187,11 @@ func (a *App) updateStatusWithName(u *User) error {
 	defer a.mutex.Unlock()
 
 	db := a.getDB()
-	stmt, err := db.Prepare("UPDATE users SET status=? WHERE name=?")
 
+	r, err := db.Exec("UPDATE users SET status=? WHERE name=?", u.Status, u.Name)
 	if err != nil {
 		return err
 	}
-
-	r, err := stmt.Exec(u.Status, u.Name)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	uid, err := r.RowsAffected()
 	if err != nil {
