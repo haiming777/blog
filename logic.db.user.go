@@ -13,15 +13,16 @@ func (a *App) createUser(u *User) (err error) {
 	db := a.getDB()
 
 	var r sql.Result
-	smt, err := db.Prepare("INSERT INTO users(name, encrypted_password, status) values(?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO users(name, encrypted_password, status) values(?,?,?)")
 	if err != nil {
 		return
 	}
 
-	r, err = smt.Exec(u.Name, u.EncryptedPassword, u.Status)
+	r, err = stmt.Exec(u.Name, u.EncryptedPassword, u.Status)
 	if err != nil {
 		return
 	}
+	defer stmt.Close()
 
 	var id int64
 	id, err = r.LastInsertId()
@@ -124,6 +125,8 @@ func (a *App) updateUserName(u *User) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	_, err = r.RowsAffected()
 	if err != nil {
 		return err
@@ -147,6 +150,8 @@ func (a *App) updateUserPasswordWithID(u *User) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	_, err = r.RowsAffected()
 	if err != nil {
 		return err
@@ -170,6 +175,8 @@ func (a *App) updatePasswordWithName(u *User) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	uid, err := r.RowsAffected()
 	if err != nil {
 		return err
@@ -194,6 +201,8 @@ func (a *App) updateStatusWithID(u *User) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	_, err = r.RowsAffected()
 	if err != nil {
 		return err
@@ -217,6 +226,8 @@ func (a *App) updateStatusWithName(u *User) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	uid, err := r.RowsAffected()
 	if err != nil {
 		return err

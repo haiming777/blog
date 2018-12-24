@@ -14,6 +14,7 @@ func (a *App) createCategory(c *Category) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	cid, err := r.LastInsertId()
 	if err != nil {
