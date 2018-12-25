@@ -73,7 +73,6 @@ func (a *App) queryUserWithID(u User) (user *User, err error) {
 
 // queryUserByName 根据用户名查询用户信息
 func (a *App) queryUserByName(name string, user *User) error {
-	user = &User{}
 	db := a.getDB()
 
 	a.mutex.RLock()
