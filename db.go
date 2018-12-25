@@ -22,20 +22,20 @@ func (a *App) initDB() {
 			sub_category INTEGER,
 			created_at DATETIME,
 			updated_at DATETIME
-		)
+		);
 		`,
 		` CREATE TABLE IF NOT EXISTS categories(
 			id INTEGER primary key AUTOINCREMENT,
 			name TEXT ,
 			parent_id INTEGER
-		)
+		);
 		`,
 		`CREATE TABLE IF NOT EXISTS users(
 			id INTEGER primary key AUTOINCREMENT,
 			name TEXT,
 			status INTEGER,
 			encrypted_password TEXT
-		)
+		);
 		`,
 		"CREATE INDEX IF NOT EXISTS idx_posts_code ON posts(code);",
 	}
