@@ -29,10 +29,6 @@ func (a *App) createUser(u *User) (err error) {
 
 // queryUserByName 根据用户名查询用户信息
 func (a *App) queryUserByName(name string, user *User) error {
-<<<<<<< HEAD
-=======
-	user = &User{}
->>>>>>> add queryUserByName func
 	db := a.getDB()
 
 	a.mutex.RLock()
