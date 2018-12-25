@@ -71,6 +71,18 @@ func (a *App) queryUserWithID(u User) (user *User, err error) {
 	return
 }
 
+// queryUserByName 根据用户名查询用户信息
+func (a *App) queryUserByName(name string, user *User) error {
+	user = &User{}
+	db := a.getDB()
+
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return db.QueryRow("SELECT id,name,status FROM users WHERE name=? ", name).
+		Scan(&user.ID, &user.Name, &user.Status)
+}
+
 func (a *App) queryUserWithName(u User) (user *User, err error) {
 	if u.ID == 0 && u.Name == "" {
 		err = fmt.Errorf("query condition error")
