@@ -23,6 +23,7 @@ func (a *App) createUser(u *User) (err error) {
 	if err != nil {
 		return nil
 	}
+
 	u.ID = uint(id)
 	return
 }
