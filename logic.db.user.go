@@ -29,16 +29,12 @@ func (a *App) createUser(u *User) (err error) {
 }
 
 //queryUser 查询用户，返回结果：user返回对外用户信息;err错误信息反馈；
-func (a *App) queryUser(u User) (user *User, err error) {
-	if u.ID == 0 && u.Name == "" {
-		err = fmt.Errorf("query condition error")
-		return
-	}
+func (a *App) queryUser(u *User) (err error) {
 
 	if u.ID != 0 {
-		user, err = a.queryUserWithID(u)
+		err = a.queryUserWithID(u)
 	} else {
-		user, err = a.queryUserWithName(u)
+		err = a.queryUserByName(u.Name, u)
 	}
 
 	if err != nil && err == sql.ErrNoRows {
@@ -49,26 +45,11 @@ func (a *App) queryUser(u User) (user *User, err error) {
 	return
 }
 
-func (a *App) queryUserWithID(u User) (user *User, err error) {
-	if u.ID == 0 && u.Name == "" {
-		err = fmt.Errorf("query condition error")
-		return
-	}
-
-	user = &User{}
+func (a *App) queryUserWithID(user *User) error {
 	db := a.getDB()
 
-	var uid, status uint
-	var name string
-
-	err = db.QueryRow("SELECT id,name,status FROM users WHERE id=? ", u.ID).Scan(&uid, &name, &status)
-	if err == nil {
-		user.ID = uid
-		user.Name = name
-		user.Status = status
-	}
-
-	return
+	return db.QueryRow("SELECT name,status FROM users WHERE id=? ", user.ID).
+		Scan(&user.Name, &user.Status)
 }
 
 // queryUserByName 根据用户名查询用户信息
@@ -82,38 +63,13 @@ func (a *App) queryUserByName(name string, user *User) error {
 		Scan(&user.ID, &user.Name, &user.Status)
 }
 
-func (a *App) queryUserWithName(u User) (user *User, err error) {
-	if u.ID == 0 && u.Name == "" {
-		err = fmt.Errorf("query condition error")
-		return
-	}
-
-	user = &User{}
-	db := a.getDB()
-
-	var uid, status uint
-	var name string
-	err = db.QueryRow("SELECT id,name,status FROM users WHERE name=? ", u.Name).Scan(&uid, &name, &status)
-
-	if err == nil {
-		user.ID = uid
-		user.Name = name
-		user.Status = status
-	}
-
-	return
-}
-
 func (a *App) updateUser(u *User) error {
 	var err error
-	if u.ID == 0 && u.Name == "" {
-		err = fmt.Errorf("update user condition error")
-		return err
-	}
+
 	if u.ID != 0 && u.Name != "" {
-		qu := User{Name: u.Name}
-		user, _ := a.queryUser(qu)
-		if user.ID != 0 {
+		qu := &User{Name: u.Name}
+		a.queryUser(qu)
+		if qu.ID != 0 {
 			err = fmt.Errorf("Name already exist")
 			return err
 		}

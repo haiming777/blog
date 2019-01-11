@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -62,9 +63,9 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//查询user name 是否已存在
-
-	um, err := a.queryUser(User{Name: req.Name})
-	if err != nil {
+	um := &User{Name: req.Name}
+	err = a.queryUserByName(req.Name, um)
+	if err != nil && err != sql.ErrNoRows {
 		outputJSON(w, APIStatus{
 			ErrCode:    -4,
 			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
@@ -152,7 +153,8 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	um, err := a.queryUser(User{ID: req.ID, Name: req.Name})
+	um := &User{ID: req.ID, Name: req.Name}
+	err = a.queryUser(um)
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
@@ -248,8 +250,8 @@ func (a *App) signin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	user, err := a.queryUser(User{Name: req.Name})
+	user := &User{Name: req.Name}
+	err = a.queryUser(user)
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,

@@ -23,6 +23,9 @@ func (a *App) createCategory(c *Category) error {
 func (a *App) queryCategories() ([]Category, error) {
 	db := a.getDB()
 
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	rows, err := db.Query("SELECT * FROM categories")
 	if err != nil {
 		return nil, err
