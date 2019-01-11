@@ -60,6 +60,7 @@ func (a *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	// summary,content,author,parentCategory,subcategory,status
 	req := struct {
 		Summary    string `json:"summary"`
 		Content    string `json:"content"`
