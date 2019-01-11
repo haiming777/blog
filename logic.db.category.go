@@ -54,3 +54,13 @@ func (a *App) queryCategories() ([]Category, error) {
 
 	return categories, nil
 }
+
+func (a *App) queryCategoryByID(c *Category) error {
+	db := a.getDB()
+
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return db.QueryRow("SELECT * FROM categories WHERE id=?", c.ID).
+		Scan(&c.ID, &c.Name, &c.ParentID)
+}

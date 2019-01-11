@@ -48,6 +48,9 @@ func (a *App) queryUser(u *User) (err error) {
 func (a *App) queryUserWithID(user *User) error {
 	db := a.getDB()
 
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	return db.QueryRow("SELECT name,status FROM users WHERE id=? ", user.ID).
 		Scan(&user.Name, &user.Status)
 }
