@@ -23,7 +23,6 @@ func (a *App) createUser(u *User) (err error) {
 	if err != nil {
 		return nil
 	}
-
 	u.ID = uint(id)
 	return
 }
@@ -40,6 +39,7 @@ func (a *App) queryUserByName(name string, user *User) error {
 }
 
 func (a *App) updateUserPassword(u *User) error {
+
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 

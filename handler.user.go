@@ -67,6 +67,7 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	err = a.queryUserByName(req.Name, &u)
 	switch {
 	case err == sql.ErrNoRows:
+
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
 			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
@@ -156,6 +157,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 	err = a.queryUserByName(req.Name, &u)
 	switch {
 	case err == sql.ErrNoRows:
+
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
 			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
@@ -253,6 +255,7 @@ func (a *App) signin(w http.ResponseWriter, r *http.Request) {
 	err = a.queryUserByName(req.Name, &u)
 	switch {
 	case err == sql.ErrNoRows:
+
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
 			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
