@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+//CategoryInfo 返回的分类信息
+type CategoryInfo struct {
+	ID             uint          `json:"id"`
+	Name           string        `json:"name"`
+	ParentCategory *CategoryInfo `json:"parent_category"`
+}
+
+//PostListInfo 帖子列表
+type PostListInfo struct {
+	ID        uint         `json:"id"`
+	Code      string       `json:"code"`
+	Summary   string       `json:"summary"`
+	Author    string       `json:"author"`
+	CreatedAt time.Time    `json:"created_at"`
+	Category  CategoryInfo `json:"category"`
+}
+
 func (a *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	resp := &APIStatus{ErrCode: 0}
 	defer outputJSON(w, resp)
@@ -98,6 +115,87 @@ func (a *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.ErrCode = 10
 		resp.ErrMessage = "create post error"
+		return
+	}
+
+	return
+}
+
+//根据分类查询帖子
+func (a *App) queryPostListHandler(w http.ResponseWriter, r *http.Request) {
+	resp := &APIStatus{ErrCode: 0}
+	defer outputJSON(w, resp)
+
+	if r.Method == "GET" {
+		resp.ErrCode = -1
+		resp.ErrMessage = "request method is error"
+		return
+	}
+
+	if r.Body == nil {
+		resp.ErrCode = -2
+		resp.ErrMessage = "request body is nil"
+		return
+	}
+
+	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
+	if err != nil {
+		resp.ErrCode = -3
+		resp.ErrMessage = "request body read error"
+		return
+	}
+	defer r.Body.Close()
+
+	req := struct {
+		Author     string `json:"author"`
+		CategoryID uint   `json:"category_id"`
+	}{}
+
+	err = json.Unmarshal(data, &req)
+	if err != nil {
+		resp.ErrCode = -4
+		resp.ErrMessage = "request param unmarshal error"
+		return
+	}
+
+	var posts []PostListInfo
+	if req.Author == "" && req.CategoryID == 0 {
+		//查询所有帖子
+		posts, err = a.queryAllPostList()
+		if err != nil {
+			resp.ErrCode = -5
+			resp.ErrMessage = "query all posts list error"
+			return
+		}
+
+		resp.ErrCode = 0
+		resp.Data = posts
+		return
+	}
+
+	if req.Author != "" {
+		posts, err = a.queryPostListByAuthor(req.Author)
+		if err != nil {
+			resp.ErrCode = -6
+			resp.ErrMessage = "query posts list by author error"
+			return
+		}
+
+		resp.ErrCode = 0
+		resp.Data = posts
+		return
+	}
+
+	if req.CategoryID != 0 {
+		posts, err = a.queryPostListByCategoryID(req.CategoryID)
+		if err != nil {
+			resp.ErrCode = -7
+			resp.ErrMessage = "query posts list by categoryID error"
+			return
+		}
+
+		resp.ErrCode = 0
+		resp.Data = posts
 		return
 	}
 
