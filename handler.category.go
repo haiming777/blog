@@ -94,3 +94,55 @@ func (a *App) categoryListHandler(w http.ResponseWriter, r *http.Request) {
 		Data:    categories,
 	})
 }
+
+func (a *App) queryCategoriesByParentIDHandler(w http.ResponseWriter, r *http.Request) {
+	resp := APIStatus{ErrCode: 0}
+	defer outputJSON(w, resp)
+
+	if r.Method != "GET" {
+		resp.ErrCode = -1
+		resp.ErrMessage = "request method is error"
+		return
+	}
+
+	if r.Body == nil {
+		resp.ErrCode = -2
+		resp.ErrMessage = "request body can not be nil"
+		return
+	}
+
+	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
+	if err != nil {
+		resp.ErrCode = -3
+		resp.ErrMessage = "request param read error"
+		return
+	}
+	defer r.Body.Close()
+
+	req := struct {
+		ID uint `json:"id"`
+	}{}
+
+	err = json.Unmarshal(data, &req)
+	if err != nil {
+		resp.ErrCode = -4
+		resp.ErrMessage = "request param unmarshal error"
+		return
+	}
+
+	if req.ID == 0 {
+		resp.ErrCode = -5
+		resp.ErrMessage = "request param error"
+		return
+	}
+
+	categories, err := a.queryCategoriesByParentID(req.ID)
+	if err != nil {
+		resp.ErrCode = -6
+		resp.ErrMessage = "query category by parent id error"
+		return
+	}
+
+	resp.Data = categories
+	return
+}
