@@ -25,6 +25,18 @@ type PostListInfo struct {
 	Category  CategoryInfo `json:"category"`
 }
 
+type ResponsePostDetail struct {
+	ID        uint         `json:"id"`
+	Code      string       `json:"code"`
+	Summary   string       `json:"summary"`
+	Content   string       `json:"content"`
+	Author    string       `json:"author"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+	Status    string       `json:"status"`
+	Category  CategoryInfo `json:"category"`
+}
+
 func (a *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	resp := &APIStatus{ErrCode: 0}
 	defer outputJSON(w, resp)
@@ -200,4 +212,60 @@ func (a *App) queryPostListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	return
+}
+
+//查询帖子详情
+func (a *App) queryPostDetailHandler(w http.ResponseWriter, r *http.Request) {
+	resp := &APIStatus{ErrCode: 0}
+	defer outputJSON(w, resp)
+
+	if r.Method != "GET" {
+		resp.ErrCode = -1
+		resp.ErrMessage = "request method is error"
+		return
+	}
+
+	if r.Body == nil {
+		resp.ErrCode = -2
+		resp.ErrMessage = "request body can not be nil"
+		return
+	}
+
+	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
+	if err != nil {
+		resp.ErrCode = -3
+		resp.ErrMessage = "read request param error"
+		return
+	}
+	defer r.Body.Close()
+
+	req := struct {
+		ID uint `json:"id"`
+	}{}
+
+	err = json.Unmarshal(data, &req)
+	if err != nil {
+		resp.ErrCode = -4
+		resp.ErrMessage = "request param unmarshal error"
+		return
+	}
+
+	if req.ID == 0 {
+		resp.ErrCode = -5
+		resp.ErrMessage = "request param is error"
+		return
+	}
+
+	postDetail := &ResponsePostDetail{ID: req.ID}
+	err = a.queryPostDetail(postDetail)
+	if err != nil {
+		resp.ErrCode = -6
+		resp.ErrMessage = "query post detail error"
+		return
+	}
+
+	resp.ErrCode = 0
+	resp.Data = postDetail
+	return
+
 }

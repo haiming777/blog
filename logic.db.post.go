@@ -154,3 +154,14 @@ func (a *App) queryPostListByCategoryID(cid uint) ([]PostListInfo, error) {
 	return postList, nil
 
 }
+
+func (a *App) queryPostDetail(postDetail *ResponsePostDetail) error {
+	db := a.getDB()
+
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return db.QueryRow("SELECT p.id,p.code,p.summary,p.content,p.author,p.created_at,p.updated_at,p.status,cate.id,cate.name FROM posts as p INNER JOIN categories as cate WHERE p.sub_category=cate.id AND p.id=?", postDetail.ID).
+		Scan(&postDetail.ID, &postDetail.Code, &postDetail.Summary, &postDetail.Content, &postDetail.Author, &postDetail.CreatedAt, &postDetail.UpdatedAt, &postDetail.Status, &postDetail.Category.ID, &postDetail.Category.Name)
+
+}
