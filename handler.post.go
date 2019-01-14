@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -12,7 +13,7 @@ import (
 type CategoryInfo struct {
 	ID             uint          `json:"id"`
 	Name           string        `json:"name"`
-	ParentCategory *CategoryInfo `json:"parent_category"`
+	ParentCategory *CategoryInfo `json:"parent_category,omitempty"`
 }
 
 //PostListInfo 帖子列表
@@ -25,6 +26,7 @@ type PostListInfo struct {
 	Category  CategoryInfo `json:"category"`
 }
 
+//ResponsePostDetail 返回帖子详情数据
 type ResponsePostDetail struct {
 	ID        uint         `json:"id"`
 	Code      string       `json:"code"`
@@ -32,7 +34,7 @@ type ResponsePostDetail struct {
 	Content   string       `json:"content"`
 	Author    string       `json:"author"`
 	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
+	UpdatedAt *time.Time   `json:"updated_at,omitempty"`
 	Status    string       `json:"status"`
 	Category  CategoryInfo `json:"category"`
 }
@@ -59,8 +61,6 @@ func (a *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-
-	// summary,content,author,parentCategory,subcategory,status
 
 	req := struct {
 		Summary    string `json:"summary"`
@@ -138,44 +138,24 @@ func (a *App) queryPostListHandler(w http.ResponseWriter, r *http.Request) {
 	resp := &APIStatus{ErrCode: 0}
 	defer outputJSON(w, resp)
 
-	if r.Method == "GET" {
+	if r.Method != "GET" {
 		resp.ErrCode = -1
 		resp.ErrMessage = "request method is error"
 		return
 	}
-
-	if r.Body == nil {
-		resp.ErrCode = -2
-		resp.ErrMessage = "request body is nil"
-		return
-	}
-
-	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
-	if err != nil {
-		resp.ErrCode = -3
-		resp.ErrMessage = "request body read error"
-		return
-	}
-	defer r.Body.Close()
-
-	req := struct {
-		Author     string `json:"author"`
-		CategoryID uint   `json:"category_id"`
-	}{}
-
-	err = json.Unmarshal(data, &req)
-	if err != nil {
-		resp.ErrCode = -4
-		resp.ErrMessage = "request param unmarshal error"
-		return
-	}
+	var (
+		cid uint64
+		err error
+	)
+	author := r.URL.Query().Get("author")
+	cid, _ = strconv.ParseUint(r.URL.Query().Get("category_id"), 10, 64)
 
 	var posts []PostListInfo
-	if req.Author == "" && req.CategoryID == 0 {
+	if author == "" && cid == 0 {
 		//查询所有帖子
 		posts, err = a.queryAllPostList()
 		if err != nil {
-			resp.ErrCode = -5
+			resp.ErrCode = -2
 			resp.ErrMessage = "query all posts list error"
 			return
 		}
@@ -185,10 +165,10 @@ func (a *App) queryPostListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Author != "" {
-		posts, err = a.queryPostListByAuthor(req.Author)
+	if author != "" {
+		posts, err = a.queryPostListByAuthor(author)
 		if err != nil {
-			resp.ErrCode = -6
+			resp.ErrCode = -3
 			resp.ErrMessage = "query posts list by author error"
 			return
 		}
@@ -198,10 +178,10 @@ func (a *App) queryPostListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.CategoryID != 0 {
-		posts, err = a.queryPostListByCategoryID(req.CategoryID)
+	if cid != 0 {
+		posts, err = a.queryPostListByCategoryID(uint(cid))
 		if err != nil {
-			resp.ErrCode = -7
+			resp.ErrCode = -4
 			resp.ErrMessage = "query posts list by categoryID error"
 			return
 		}
@@ -225,38 +205,19 @@ func (a *App) queryPostDetailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Body == nil {
-		resp.ErrCode = -2
-		resp.ErrMessage = "request body can not be nil"
-		return
-	}
-
-	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
-	if err != nil {
-		resp.ErrCode = -3
-		resp.ErrMessage = "read request param error"
-		return
-	}
-	defer r.Body.Close()
-
-	req := struct {
-		ID uint `json:"id"`
-	}{}
-
-	err = json.Unmarshal(data, &req)
+	pid, err := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
 	if err != nil {
 		resp.ErrCode = -4
-		resp.ErrMessage = "request param unmarshal error"
+		resp.ErrMessage = "request param strconv error"
 		return
 	}
-
-	if req.ID == 0 {
+	if pid == 0 {
 		resp.ErrCode = -5
 		resp.ErrMessage = "request param is error"
 		return
 	}
 
-	postDetail := &ResponsePostDetail{ID: req.ID}
+	postDetail := &ResponsePostDetail{ID: uint(pid)}
 	err = a.queryPostDetail(postDetail)
 	if err != nil {
 		resp.ErrCode = -6

@@ -135,7 +135,7 @@ func (a *App) queryPostListByCategoryID(cid uint) ([]PostListInfo, error) {
 
 	postList := make([]PostListInfo, 0)
 	for rows.Next() {
-		err = rows.Scan(&pid, &code, &summary, &createdAt, &categoryID, &categoryName)
+		err = rows.Scan(&pid, &code, &summary, &author, &createdAt, &categoryID, &categoryName)
 		if err != nil {
 			return nil, err
 		}
