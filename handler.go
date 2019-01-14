@@ -12,8 +12,20 @@ func (a *App) initHandler() {
 	a.registerRouter("/signin", a.signin)
 
 	//category
+	//创建分类
 	a.registerRouter("/category/create", a.createCategoryHandler)
+	//获取一级分类
 	a.registerRouter("/categories", a.categoryListHandler)
+	//获取子分类
+	a.registerRouter("/sub-categories", a.queryCategoriesByParentIDHandler)
+
+	//post
+	//创建帖子
+	a.registerRouter("/posts/create", a.createPostHandler)
+	//查询帖子列表
+	a.registerRouter("/posts", a.queryPostListHandler)
+	//查询帖子详情
+	a.registerRouter("/posts-detail", a.queryPostDetailHandler)
 
 }
 

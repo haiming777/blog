@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 func (a *App) createCategoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +80,7 @@ func (a *App) categoryListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//查询所有category数据并返回
-	categories, err := a.queryCategories()
+	categories, err := a.queryCategoriesFirstLevel()
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -1,
@@ -96,9 +97,8 @@ func (a *App) categoryListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) queryCategoriesByParentIDHandler(w http.ResponseWriter, r *http.Request) {
-	resp := APIStatus{ErrCode: 0}
+	resp := &APIStatus{ErrCode: 0}
 	defer outputJSON(w, resp)
-
 	if r.Method != "GET" {
 		resp.ErrCode = -1
 		resp.ErrMessage = "request method is error"
@@ -111,38 +111,25 @@ func (a *App) queryCategoriesByParentIDHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	data, err := ioutil.ReadAll(ioutil.NopCloser(r.Body))
+	parentID, err := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
 	if err != nil {
 		resp.ErrCode = -3
-		resp.ErrMessage = "request param read error"
-		return
-	}
-	defer r.Body.Close()
-
-	req := struct {
-		ID uint `json:"id"`
-	}{}
-
-	err = json.Unmarshal(data, &req)
-	if err != nil {
-		resp.ErrCode = -4
-		resp.ErrMessage = "request param unmarshal error"
+		resp.ErrMessage = "request param strconv error"
 		return
 	}
 
-	if req.ID == 0 {
-		resp.ErrCode = -5
+	if parentID == 0 {
+		resp.ErrCode = -3
 		resp.ErrMessage = "request param error"
 		return
 	}
 
-	categories, err := a.queryCategoriesByParentID(req.ID)
+	categories, err := a.queryCategoriesByParentID(uint(parentID))
 	if err != nil {
-		resp.ErrCode = -6
+		resp.ErrCode = -4
 		resp.ErrMessage = "query category by parent id error"
 		return
 	}
-
 	resp.Data = categories
 	return
 }

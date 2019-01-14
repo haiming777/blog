@@ -20,13 +20,13 @@ func (a *App) createCategory(c *Category) error {
 }
 
 //queryCategories 查询所有分类
-func (a *App) queryCategories() ([]Category, error) {
+func (a *App) queryCategoriesFirstLevel() ([]Category, error) {
 	db := a.getDB()
 
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	rows, err := db.Query("SELECT * FROM categories")
+	rows, err := db.Query("SELECT * FROM categories WHERE parent_id=?", 0)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +84,7 @@ func (a *App) queryCategoriesByParentID(pid uint) ([]Category, error) {
 
 	categories := make([]Category, 0)
 	for rows.Next() {
+
 		err = rows.Scan(&id, &name)
 		if err != nil {
 			return nil, err
