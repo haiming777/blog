@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -62,20 +63,19 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//查询user name 是否已存在
-
-	um, err := a.queryUser(User{Name: req.Name})
-	if err != nil {
+	u := User{}
+	err = a.queryUserByName(req.Name, &u)
+	switch {
+	case err == sql.ErrNoRows:
 		outputJSON(w, APIStatus{
-			ErrCode:    -4,
-			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
+			ErrCode:    -2,
+			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
 		})
 		return
-	}
-
-	if um.ID != 0 {
+	case err != nil:
 		outputJSON(w, APIStatus{
-			ErrCode:    -4,
-			ErrMessage: "name is already signup",
+			ErrCode:    -2,
+			ErrMessage: fmt.Sprintf("db  error:%s", err.Error()),
 		})
 		return
 	}
@@ -143,7 +143,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ID == 0 && req.Name == "" {
+	if req.Name == "" {
 		outputJSON(w, APIStatus{
 			ErrCode:    -1,
 			ErrMessage: "param is error",
@@ -152,19 +152,19 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	um, err := a.queryUser(User{ID: req.ID, Name: req.Name})
-	if err != nil {
+	u := User{}
+	err = a.queryUserByName(req.Name, &u)
+	switch {
+	case err == sql.ErrNoRows:
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
-			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
+			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
 		})
 		return
-	}
-
-	if um.ID == 0 {
+	case err != nil:
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
-			ErrMessage: "user name is not exist",
+			ErrMessage: fmt.Sprintf("db  error:%s", err.Error()),
 		})
 		return
 	}
@@ -183,7 +183,7 @@ func (a *App) updataUserHandler(w http.ResponseWriter, r *http.Request) {
 		Status:            req.State,
 	}
 
-	err = a.updateUser(user)
+	err = a.updateUserPassword(user)
 	if err != nil {
 		outputJSON(w, APIStatus{
 			ErrCode:    -3,
@@ -249,39 +249,31 @@ func (a *App) signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := a.queryUser(User{Name: req.Name})
-	if err != nil {
+	u := User{}
+	err = a.queryUserByName(req.Name, &u)
+	switch {
+	case err == sql.ErrNoRows:
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
-			ErrMessage: fmt.Sprintf("db query error:%s", err.Error()),
+			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
 		})
 		return
-	}
-
-	if user.ID == 0 {
+	case err != nil:
 		outputJSON(w, APIStatus{
 			ErrCode:    -2,
-			ErrMessage: "user name is not exist",
+			ErrMessage: fmt.Sprintf("db  error:%s", err.Error()),
 		})
 		return
 	}
 
 	encryptedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
-	if encryptedPassword != user.EncryptedPassword {
+	if encryptedPassword != u.EncryptedPassword {
 		outputJSON(w, APIStatus{
 			ErrCode:    -3,
 			ErrMessage: "name/password is error",
 		})
 		return
 	}
-
-	// if user.Status != 1 {
-	// 	outputJSON(w, APIStatus{
-	// 		ErrCode:    -4,
-	// 		ErrMessage: "account is locked",
-	// 	})
-	// 	return
-	// }
 
 	outputJSON(w, APIStatus{
 		ErrCode: 0,
