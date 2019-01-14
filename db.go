@@ -24,12 +24,18 @@ func (a *App) initDB() {
 			updated_at DATETIME
 		);
 		`,
+		"CREATE INDEX IF NOT EXISTS idx_posts_code ON posts(code);",
+		"CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author);",
+		"CREATE INDEX IF NOT EXISTS idx_posts_parent_category ON posts(parent_category);",
+		"CREATE INDEX IF NOT EXISTS idx_posts_sub_category ON posts(sub_category);",
 		` CREATE TABLE IF NOT EXISTS categories(
 			id INTEGER primary key AUTOINCREMENT,
 			name TEXT ,
 			parent_id INTEGER
 		);
 		`,
+		"CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);",
+		"CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);",
 		`CREATE TABLE IF NOT EXISTS users(
 			id INTEGER primary key AUTOINCREMENT,
 			name TEXT,
@@ -37,7 +43,7 @@ func (a *App) initDB() {
 			encrypted_password TEXT
 		);
 		`,
-		"CREATE INDEX IF NOT EXISTS idx_posts_code ON posts(code);",
+		"CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);",
 	}
 
 	var err error
