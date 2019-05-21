@@ -65,20 +65,13 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	//查询user name 是否已存在
 	u := User{}
 	err = a.queryUserByName(req.Name, &u)
-	switch {
-	case err == sql.ErrNoRows:
-
-		outputJSON(w, APIStatus{
-			ErrCode:    -2,
-			ErrMessage: fmt.Sprintf("db ErrNoRows error:%s", err.Error()),
-		})
-		return
-	case err != nil:
-		outputJSON(w, APIStatus{
-			ErrCode:    -2,
-			ErrMessage: fmt.Sprintf("db  error:%s", err.Error()),
-		})
-		return
+	if err != nil {
+		if err != sql.ErrNoRows {
+			outputJSON(w, APIStatus{
+				ErrCode:    -2,
+				ErrMessage: fmt.Sprintf("db  error:%s", err.Error()),
+			})
+		}
 	}
 
 	//创建user
